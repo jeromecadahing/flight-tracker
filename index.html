@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>London fare tracker: USA and Europe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#E9EEF3; --surface:#FFFFFF; --ink:#142235; --muted:#5B6B80; --rule:#CCD6E1;
+  --board:#142235; --flap:#1E3150; --flap-text:#F5C542;
+  --line:#2B5C9E; --band:rgba(43,92,158,.16); --good:#1F7A50; --bad:#B8430F; --hold:#7A6410;
+  --focus:#F5A300;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --bg:#0E1724; --surface:#16233A; --ink:#E3EAF3; --muted:#93A3B8; --rule:#2A3B55;
+    --board:#060B14; --flap:#13213A; --flap-text:#F5C542;
+    --line:#76A9EC; --band:rgba(118,169,236,.18); --good:#4CC38A; --bad:#F08A5D; --hold:#E3C454;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.5 "Barlow",system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 64px}
+h1,h2,.display{font-family:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;font-weight:700;letter-spacing:.01em}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+/* Departure board hero */
+.board{background:var(--board);color:#E8EEF6;margin:0 -20px;padding:28px 20px 30px}
+.board-inner{max-width:940px;margin:0 auto;display:grid;gap:18px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid #2A3B55}
+.tab{background:none;border:0;color:#9FB0C6;padding:8px 18px 10px;cursor:pointer;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:1.25rem;letter-spacing:.02em;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--flap-text);border-bottom-color:var(--flap-text)}
+.tab:hover{color:#E8EEF6}
+.route{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.route h1{margin:0;font-size:clamp(2rem,6vw,3.2rem);line-height:1}
+.route .sub{color:#9FB0C6;font-size:.95rem}
+.flaps{display:flex;gap:6px;flex-wrap:wrap}
+.flap{position:relative;width:clamp(44px,10vw,74px);height:clamp(62px,14vw,104px);background:var(--flap);border-radius:6px;
+  display:grid;place-items:center;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;
+  font-size:clamp(2.4rem,9vw,4.4rem);color:var(--flap-text);box-shadow:inset 0 -2px 0 rgba(0,0,0,.35)}
+.flap::after{content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:var(--board)}
+.flap.turn{animation:flip .38s ease-out}
+@keyframes flip{0%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
+@media (prefers-reduced-motion:reduce){.flap.turn{animation:none}}
+.verdict{font-size:1.15rem;font-weight:600;max-width:60ch}
+.verdict .tag{display:inline-block;padding:2px 10px;border-radius:4px;margin-right:8px;font-family:"Barlow Condensed",sans-serif;font-size:1.05rem;letter-spacing:.03em}
+.tag.book{background:#2E9E68;color:#04170D}.tag.wait{background:#F5C542;color:#231B00}.tag.hold{background:#9FB0C6;color:#0B1422}.tag.soon{background:#F08A5D;color:#2A0E02}
+.meta{color:#9FB0C6;font-size:.95rem}
+
+/* Body */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin:24px 0}
+.stat{background:var(--surface);padding:14px 16px}
+.stat b{display:block;font-family:"Barlow Condensed",sans-serif;font-size:1.8rem;line-height:1.1}
+.stat span{color:var(--muted);font-size:.9rem}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+section{margin-top:28px}
+section>h2{font-size:1.5rem;margin:0 0 10px}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.chart-wrap{overflow-x:auto}
+svg{display:block;width:100%;min-width:520px;height:auto}
+.legend{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:.9rem;margin-top:8px}
+.legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px;background:var(--line)}
+.legend i.dash{background:repeating-linear-gradient(90deg,var(--line) 0 5px,transparent 5px 9px)}
+.legend i.band{height:10px;background:var(--band)}
+
+form.add{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;align-items:end}
+form.add label{display:grid;gap:4px;font-size:.9rem;color:var(--muted)}
+form.add .wide{grid-column:span 2}
+input,select{background:var(--bg);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;width:100%}
+.btn{background:var(--ink);color:var(--surface);border:0;border-radius:6px;padding:9px 16px;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--rule)}
+@media (max-width:720px){form.add{grid-template-columns:repeat(2,1fr)}form.add .wide{grid-column:span 2}}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.toolbar label{display:flex;gap:8px;align-items:center;color:var(--muted)}
+.toolbar select{width:auto}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule);white-space:nowrap}
+th{color:var(--muted);font-weight:500}
+td.num{font-variant-numeric:tabular-nums;font-weight:600}
+td button{background:none;border:0;color:var(--muted);cursor:pointer;padding:2px 6px}
+.empty{color:var(--muted);padding:20px 0}
+.note{color:var(--muted);font-size:.9rem;margin-top:10px;max-width:70ch}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header class="board">
+  <div class="board-inner">
+    <div class="tabs" role="tablist" aria-label="Destination">
+      <button class="tab" role="tab" id="tab-us" data-region="us" aria-controls="regionPanel">USA</button>
+      <button class="tab" role="tab" id="tab-eu" data-region="eu" aria-controls="regionPanel">Europe</button>
+    </div>
+    <div class="route">
+      <h1 id="routeTitle">London to USA</h1>
+      <span class="sub" id="tripLabel">Cheapest fare, any date</span>
+    </div>
+    <div class="flaps" id="flaps" aria-live="polite"></div>
+    <div class="verdict" id="verdict"></div>
+    <div class="meta" id="meta"></div>
+  </div>
+</header>
+
+<main class="wrap" id="regionPanel" role="tabpanel">
+  <div class="stats" id="stats"></div>
+
+  <section>
+    <h2>Price history and 7-day forecast</h2>
+    <div class="panel">
+      <div class="chart-wrap"><svg id="chart" viewBox="0 0 760 320" role="img" aria-label="Fare history and forecast chart"></svg></div>
+      <div class="legend"><span><i></i>Cheapest fare you logged</span><span><i class="dash"></i>Forecast</span><span><i class="band"></i>Likely range</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Log today’s cheapest fare</h2>
+    <form class="add panel" id="addForm">
+      <label>Checked on<input type="date" name="checked" required></label>
+      <label>Flying on<input type="date" name="travel"></label>
+      <label>Price (£)<input type="number" name="price" min="1" step="1" required inputmode="numeric"></label>
+      <label>Airline<input type="text" name="airline" id="airlineInput" placeholder="e.g. Norse"></label>
+      <label>Route<input type="text" name="route" id="routeInput" placeholder="LGW-JFK"></label>
+      <button class="btn" type="submit">Save fare</button>
+    </form>
+    <p class="note"><span id="logHint">Check Google Flights, Skyscanner or Kayak once a day for London to the US and log the lowest fare.</span> Leave “Flying on” blank if you’re tracking flexible dates. Data stays in this browser only.</p>
+  </section>
+
+  <section>
+    <h2>All fares</h2>
+    <div class="toolbar">
+      <label>Trip <select id="tripSelect"></select></label>
+      <button class="btn ghost" type="button" id="importBtn">Import CSV</button>
+      <button class="btn ghost" type="button" id="exportBtn">Export CSV</button>
+      <input type="file" id="fileInput" accept=".csv,text/csv" hidden>
+    </div>
+    <div class="table-wrap panel" id="tableWrap"></div>
+    <p class="note">Import accepts the <code>prices.csv</code> made by <code>flight_tracker.py</code>, so the script and this app share one history. Rows are sorted into the USA and Europe tabs by their region column; a file without one goes into the tab you’re on.</p>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+  const KEY = "london-fares-v2", OLD_KEY = "lon-usa-fares-v1";
+  const ANY = "__any__";
+  const REGIONS = {
+    us: {name: "USA", hash: "usa", hint: "Check Google Flights, Skyscanner or Kayak once a day for London to the US and log the lowest fare.", airline: "e.g. Norse", route: "LGW-JFK"},
+    eu: {name: "Europe", hash: "europe", hint: "Check Google Flights, Skyscanner or Kayak once a day for London to anywhere in Europe and log the lowest fare.", airline: "e.g. easyJet", route: "LTN-BCN"},
+  };
+  let store = {active: "us", regions: {us: {entries: [], trip: ANY}, eu: {entries: [], trip: ANY}}};
+  let region = "us", entries = [], trip = ANY;
+
+  // ---------- storage ----------
+  function load(){
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw){
+        const d = JSON.parse(raw);
+        for (const k of Object.keys(REGIONS)) if (d.regions?.[k]) store.regions[k] = {entries: d.regions[k].entries || [], trip: d.regions[k].trip || ANY};
+        if (REGIONS[d.active]) store.active = d.active;
+      } else {
+        const old = localStorage.getItem(OLD_KEY);  // fares saved before tabs existed belong to USA
+        if (old){ const d = JSON.parse(old); store.regions.us = {entries: d.entries || [], trip: d.trip || ANY}; }
+      }
+    } catch(e){}
+    const fromHash = Object.keys(REGIONS).find(k => REGIONS[k].hash === location.hash.slice(1));
+    if (fromHash) store.active = fromHash;
+    bind();
+  }
+  function bind(){
+    region = store.active;
+    entries = store.regions[region].entries;
+    trip = store.regions[region].trip;
+  }
+  function save(){
+    store.regions[region].entries = entries;
+    store.regions[region].trip = trip;
+    try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){}
+  }
+  function switchRegion(k){
+    if (!REGIONS[k] || k === region) return;
+    save(); store.active = k; bind(); save();
+    if (location.hash.slice(1) !== REGIONS[k].hash) history.replaceState(null, "", "#" + REGIONS[k].hash);
+    lastFlapText = ""; render();
+  }
+  const uid = () => Math.random().toString(36).slice(2, 10);
+  const today = () => new Date().toISOString().slice(0,10);
+  const fmt = n => "£" + Math.round(n).toLocaleString("en-GB");
+  const fmtDate = s => new Date(s + "T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+
+  function toast(msg){ const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("on"); setTimeout(()=>t.classList.remove("on"), 2200); }
+
+  // ---------- series + forecast (Holt, same as the Python script) ----------
+  function seriesFor(sel){
+    const pts = {};
+    for (const e of entries){
+      if (sel !== ANY && (e.travel || "") !== sel) continue;
+      if (pts[e.checked] === undefined || e.price < pts[e.checked]) pts[e.checked] = e.price;
+    }
+    const days = Object.keys(pts).sort();
+    if (!days.length) return {dates:[], vals:[]};
+    const dates = [], vals = [];
+    const DAY = 86400000;
+    const t0 = Date.parse(days[0]), t1 = Date.parse(days[days.length-1]);
+    for (let t = t0; t <= t1; t += DAY){
+      const d = new Date(t).toISOString().slice(0,10);
+      let v = pts[d];
+      if (v === undefined){
+        const prev = days.filter(x => x < d).pop(), next = days.find(x => x > d);
+        const f = (t - Date.parse(prev)) / (Date.parse(next) - Date.parse(prev));
+        v = pts[prev] + f * (pts[next] - pts[prev]);
+      }
+      dates.push(d); vals.push(v);
+    }
+    return {dates, vals, observed: new Set(days)};
+  }
+
+  function holt(s, a, b){
+    let level = s[0], trend = s.length > 1 ? s[1] - s[0] : 0, sse = 0;
+    for (let i = 1; i < s.length; i++){
+      const pred = level + trend; sse += (s[i] - pred) ** 2;
+      const nl = a * s[i] + (1 - a) * (level + trend);
+      trend = b * (nl - level) + (1 - b) * trend; level = nl;
+    }
+    return {level, trend, sse};
+  }
+  function forecast(s, h = 7){
+    if (s.length < 3) return [];
+    let best = null;
+    for (let a = .1; a < .95; a += .1) for (let b = .1; b < .95; b += .1){
+      const r = holt(s, a, b); if (!best || r.sse < best.sse) best = r;
+    }
+    const rmse = Math.sqrt(best.sse / Math.max(s.length - 1, 1));
+    const out = []; let damp = 0;
+    for (let i = 1; i <= h; i++){
+      damp += Math.pow(.9, i);
+      const p = Math.max(best.level + damp * best.trend, 1), spread = 1.96 * rmse * Math.sqrt(i);
+      out.push({p, lo: Math.max(p - spread, 1), hi: p + spread});
+    }
+    return out;
+  }
+
+  function advise(vals, fc, sel){
+    if (!vals.length) return {tag:"hold", label:"No data", text:"Log your first fare below to start the tracker."};
+    const latest = vals[vals.length-1];
+    const low14 = Math.min(...vals.slice(-14));
+    const wk = fc.length ? fc[fc.length-1].p : latest;
+    if (sel !== ANY){
+      const daysToGo = Math.round((Date.parse(sel) - Date.parse(today())) / 86400000);
+      if (daysToGo >= 0 && daysToGo <= 21) return {tag:"soon", label:"Book soon", text:`${daysToGo} days to go. Fares usually rise from here.`};
+    }
+    if (vals.length < 3) return {tag:"hold", label:"Learning", text:`Log ${3 - vals.length} more day${vals.length === 2 ? "" : "s"} of prices to unlock the forecast.`};
+    if (latest <= low14 * 1.02) return {tag:"book", label:"Good price", text:"Today is at or near the lowest fare of the last two weeks."};
+    if (wk < latest * .95) return {tag:"wait", label:"Wait", text:`The trend points lower, around ${fmt(wk)} in a week. Check again tomorrow.`};
+    if (wk > latest * 1.05) return {tag:"soon", label:"Book soon", text:`The trend points higher, around ${fmt(wk)} in a week.`};
+    return {tag:"hold", label:"Hold", text:"About average. No strong signal either way."};
+  }
+
+  // ---------- render ----------
+  let lastFlapText = "";
+  function renderFlaps(text){
+    const box = document.getElementById("flaps");
+    if (text === lastFlapText) return;
+    lastFlapText = text;
+    box.innerHTML = "";
+    [...text].forEach((ch, i) => {
+      const d = document.createElement("div");
+      d.className = "flap turn"; d.textContent = ch; d.style.animationDelay = (i * 60) + "ms";
+      box.appendChild(d);
+    });
+    box.setAttribute("aria-label", "Latest cheapest fare " + text);
+  }
+
+  function renderTrips(){
+    const sel = document.getElementById("tripSelect");
+    const trips = [...new Set(entries.map(e => e.travel).filter(Boolean))].sort();
+    if (trip !== ANY && !trips.includes(trip)) trip = ANY;
+    sel.innerHTML = `<option value="${ANY}">Any date (lowest per day)</option>` +
+      trips.map(t => `<option value="${t}">Flying ${fmtDate(t)} ${t.slice(0,4)}</option>`).join("");
+    sel.value = trip;
+    document.getElementById("tripLabel").textContent = trip === ANY ? "Cheapest fare, any date" : "Flying " + new Date(trip + "T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"long",year:"numeric"});
+  }
+
+  function renderHero(vals, fc){
+    const latest = vals.length ? vals[vals.length-1] : null;
+    renderFlaps(latest === null ? "£---" : fmt(latest).replace(/,/g,""));
+    const a = advise(vals, fc, trip);
+    const v = document.getElementById("verdict");
+    v.innerHTML = "";
+    const tag = document.createElement("span"); tag.className = "tag " + a.tag; tag.textContent = a.label;
+    v.append(tag, document.createTextNode(a.text));
+    const last = entries.filter(e => trip === ANY || e.travel === trip).sort((x,y)=>x.checked.localeCompare(y.checked)).pop();
+    document.getElementById("meta").textContent = last ? `Last logged ${fmtDate(last.checked)}${last.airline ? ", " + last.airline : ""}${last.route ? ", " + last.route : ""}` : "";
+  }
+
+  function renderStats(vals, fc){
+    const s = document.getElementById("stats");
+    if (!vals.length){ s.innerHTML = ""; s.style.display = "none"; return; }
+    s.style.display = "";
+    const latest = vals[vals.length-1];
+    const avg = vals.slice(-14).reduce((a,b)=>a+b,0) / Math.min(vals.length,14);
+    const prev = vals.length > 1 ? vals[vals.length-2] : null;
+    const chg = prev === null ? "–" : (latest - prev >= 0 ? "+" : "−") + fmt(Math.abs(latest - prev));
+    const items = [
+      [fmt(Math.min(...vals)), "Lowest seen"],
+      [fmt(avg), "14-day average"],
+      [chg, "Change since yesterday"],
+      [fc.length ? fmt(fc[fc.length-1].p) : "–", "Forecast in 7 days"],
+    ];
+    s.innerHTML = items.map(([b,l]) => `<div class="stat"><b>${b}</b><span>${l}</span></div>`).join("");
+  }
+
+  function renderChart(dates, vals, observed, fc){
+    const svg = document.getElementById("chart");
+    const W = 760, H = 320, L = 56, R = 16, T = 16, B = 36;
+    const cs = getComputedStyle(document.documentElement);
+    const c = n => cs.getPropertyValue(n).trim();
+    if (!vals.length){
+      svg.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="${c("--muted")}" font-size="16">Your fares will appear here once you log one.</text>`;
+      return;
+    }
+    const n = vals.length + fc.length;
+    const all = vals.concat(fc.flatMap(f => [f.lo, f.hi]));
+    let lo = Math.min(...all), hi = Math.max(...all);
+    const pad = Math.max((hi - lo) * .12, 20); lo = Math.max(0, lo - pad); hi += pad;
+    const x = i => L + (n <= 1 ? (W-L-R)/2 : i * (W - L - R) / (n - 1));
+    const y = v => T + (hi - v) * (H - T - B) / (hi - lo);
+    let g = "";
+    for (let k = 0; k <= 4; k++){
+      const v = lo + (hi - lo) * k / 4, yy = y(v).toFixed(1);
+      g += `<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="${c("--rule")}" />`;
+      g += `<text x="${L-8}" y="${+yy+4}" text-anchor="end" fill="${c("--muted")}" font-size="12">£${Math.round(v)}</text>`;
+    }
+    const step = Math.max(1, Math.ceil(n / 8));
+    const lastDate = Date.parse(dates[dates.length-1]);
+    for (let i = 0; i < n; i += step){
+      const d = i < dates.length ? dates[i] : new Date(lastDate + (i - dates.length + 1) * 86400000).toISOString().slice(0,10);
+      g += `<text x="${x(i).toFixed(1)}" y="${H-12}" text-anchor="middle" fill="${c("--muted")}" font-size="12">${fmtDate(d)}</text>`;
+    }
+    if (fc.length){
+      const li = vals.length - 1;
+      const up = [[x(li), y(vals[li])], ...fc.map((f,i) => [x(li+1+i), y(f.hi)])];
+      const dn = [...fc.map((f,i) => [x(li+1+i), y(f.lo)])].reverse().concat([[x(li), y(vals[li])]]);
+      g += `<polygon points="${up.concat(dn).map(p=>p.map(v=>v.toFixed(1)).join(",")).join(" ")}" fill="${c("--band")}" />`;
+      g += `<polyline points="${[[x(li), y(vals[li])], ...fc.map((f,i)=>[x(li+1+i), y(f.p)])].map(p=>p.map(v=>v.toFixed(1)).join(",")).join(" ")}" fill="none" stroke="${c("--line")}" stroke-width="2.5" stroke-dasharray="6 5" />`;
+      g += `<line x1="${x(li).toFixed(1)}" x2="${x(li).toFixed(1)}" y1="${T}" y2="${H-B}" stroke="${c("--muted")}" stroke-dasharray="2 4" />`;
+    }
+    g += `<polyline points="${vals.map((v,i)=>x(i).toFixed(1)+","+y(v).toFixed(1)).join(" ")}" fill="none" stroke="${c("--line")}" stroke-width="2.5" stroke-linejoin="round" />`;
+    vals.forEach((v,i) => {
+      if (!observed.has(dates[i])) return;
+      g += `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4" fill="${c("--surface")}" stroke="${c("--line")}" stroke-width="2"><title>${fmtDate(dates[i])}: ${fmt(v)}</title></circle>`;
+    });
+    svg.innerHTML = g;
+  }
+
+  function renderTable(){
+    const wrap = document.getElementById("tableWrap");
+    const rows = entries.filter(e => trip === ANY || e.travel === trip).sort((a,b) => b.checked.localeCompare(a.checked) || a.price - b.price);
+    if (!rows.length){ wrap.innerHTML = `<p class="empty">No fares yet. Log one above or import a CSV from the script.</p>`; return; }
+    const esc = s => String(s ?? "").replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+    wrap.innerHTML = `<table><thead><tr><th>Checked</th><th>Flying</th><th>Price</th><th>Airline</th><th>Route</th><th><span hidden>Delete</span></th></tr></thead><tbody>` +
+      rows.map(e => `<tr><td>${fmtDate(e.checked)}</td><td>${e.travel ? fmtDate(e.travel) : "Flexible"}</td><td class="num">${fmt(e.price)}</td><td>${esc(e.airline)}</td><td>${esc(e.route)}</td><td><button type="button" data-del="${e.id}" aria-label="Delete fare from ${fmtDate(e.checked)}">✕</button></td></tr>`).join("") +
+      `</tbody></table>`;
+  }
+
+  function renderRegion(){
+    const R = REGIONS[region];
+    document.querySelectorAll(".tab").forEach(t => {
+      const on = t.dataset.region === region;
+      t.setAttribute("aria-selected", on); t.tabIndex = on ? 0 : -1;
+    });
+    document.getElementById("regionPanel").setAttribute("aria-labelledby", "tab-" + region);
+    document.getElementById("routeTitle").textContent = "London to " + R.name;
+    document.getElementById("logHint").textContent = R.hint;
+    document.getElementById("airlineInput").placeholder = R.airline;
+    document.getElementById("routeInput").placeholder = R.route;
+    document.title = "London to " + R.name + " fare tracker";
+  }
+
+  function render(){
+    renderRegion();
+    renderTrips();
+    const {dates, vals, observed} = seriesFor(trip);
+    const fc = forecast(vals);
+    renderHero(vals, fc); renderStats(vals, fc); renderChart(dates, vals, observed || new Set(), fc); renderTable();
+  }
+
+  // ---------- CSV ----------
+  function parseCSV(text){
+    const rows = []; let row = [], cell = "", q = false;
+    for (let i = 0; i < text.length; i++){
+      const ch = text[i];
+      if (q){ if (ch === '"' && text[i+1] === '"'){ cell += '"'; i++; } else if (ch === '"') q = false; else cell += ch; }
+      else if (ch === '"') q = true;
+      else if (ch === ","){ row.push(cell); cell = ""; }
+      else if (ch === "\n" || ch === "\r"){ if (ch === "\r" && text[i+1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+      else cell += ch;
+    }
+    if (cell || row.length){ row.push(cell); rows.push(row); }
+    return rows.filter(r => r.some(c => c.trim()));
+  }
+  function importCSV(text, source){
+    const rows = parseCSV(text); if (rows.length < 2) return 0;
+    const h = rows[0].map(s => s.trim().toLowerCase());
+    const col = (...names) => names.map(n => h.indexOf(n)).find(i => i >= 0);
+    const ci = {region: col("region"), checked: col("checked_on","checked","date"), travel: col("travel_date","travel","flying"), price: col("price"), airline: col("airline"), route: col("route")};
+    if (ci.checked === undefined || ci.price === undefined) return -1;
+    const regionOf = v => {
+      v = (v || "").trim().toLowerCase();
+      if (["us","usa","united states"].includes(v)) return "us";
+      if (["eu","europe"].includes(v)) return "eu";
+      return region;
+    };
+    let added = 0;
+    for (const r of rows.slice(1)){
+      const list = store.regions[regionOf(ci.region !== undefined ? r[ci.region] : "")].entries;
+      const checked = (r[ci.checked] || "").trim(), price = parseFloat(r[ci.price]);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(checked) || !(price > 0)) continue;
+      const travel = ci.travel !== undefined ? (r[ci.travel] || "").trim() : "";
+      if (list.some(e => e.checked === checked && (e.travel||"") === travel && e.price === price)) continue;
+      list.push({id: uid(), source: source || "manual", checked, travel, price, airline: ci.airline !== undefined ? r[ci.airline] : "", route: ci.route !== undefined ? r[ci.route] : ""});
+      added++;
+    }
+    return added;
+  }
+  function exportCSV(){
+    const q = s => /[",\n]/.test(String(s ?? "")) ? `"${String(s).replace(/"/g,'""')}"` : String(s ?? "");
+    save();
+    const lines = ["region,checked_on,travel_date,price,currency,airline,route"];
+    for (const [k, label] of [["us","us"],["eu","europe"]])
+      for (const e of store.regions[k].entries.slice().sort((a,b)=>a.checked.localeCompare(b.checked)))
+        lines.push([label, e.checked, e.travel, e.price, "GBP", e.airline, e.route].map(q).join(","));
+    const blob = new Blob([lines.join("\n")], {type:"text/csv"});
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "london-fares.csv";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // ---------- events ----------
+  const form = document.getElementById("addForm");
+  form.checked.value = today();
+  form.addEventListener("submit", ev => {
+    ev.preventDefault();
+    const price = parseFloat(form.price.value);
+    if (!(price > 0)) return;
+    const e = {id: uid(), checked: form.checked.value, travel: form.travel.value, price, airline: form.airline.value.trim(), route: form.route.value.trim().toUpperCase()};
+    entries.push(e);
+    if (e.travel && trip === ANY && entries.filter(x => x.travel === e.travel).length === 1) trip = e.travel;
+    save(); render();
+    form.price.value = ""; form.airline.value = ""; form.route.value = "";
+    toast("Fare saved");
+  });
+  document.getElementById("tripSelect").addEventListener("change", ev => { trip = ev.target.value; save(); render(); });
+  document.getElementById("tableWrap").addEventListener("click", ev => {
+    const id = ev.target.closest("[data-del]")?.dataset.del; if (!id) return;
+    entries = entries.filter(e => e.id !== id); save(); render(); toast("Fare deleted");
+  });
+  document.getElementById("importBtn").addEventListener("click", () => document.getElementById("fileInput").click());
+  document.getElementById("fileInput").addEventListener("change", async ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    const n = importCSV(await f.text()); ev.target.value = "";
+    bind();
+    if (n < 0) toast("That CSV needs checked_on and price columns");
+    else { save(); render(); toast(n ? `Imported ${n} fare${n === 1 ? "" : "s"}` : "No new fares in that file"); }
+  });
+  document.getElementById("exportBtn").addEventListener("click", exportCSV);
+  document.querySelectorAll(".tab").forEach(t => {
+    t.addEventListener("click", () => switchRegion(t.dataset.region));
+    t.addEventListener("keydown", ev => {
+      if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
+      const keys = Object.keys(REGIONS), next = keys[(keys.indexOf(region) + (ev.key === "ArrowRight" ? 1 : keys.length - 1)) % keys.length];
+      switchRegion(next); document.getElementById("tab-" + next).focus();
+    });
+  });
+  addEventListener("hashchange", () => {
+    const k = Object.keys(REGIONS).find(k => REGIONS[k].hash === location.hash.slice(1));
+    if (k) switchRegion(k);
+  });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", render);
+
+  // When the page is online (GitHub Pages), load the daily checks from prices.csv beside it.
+  // Those rows are refreshed on every visit; fares you type in yourself are kept.
+  async function autoLoad(){
+    if (!/^https?:$/.test(location.protocol)) return;
+    try {
+      const res = await fetch("prices.csv?t=" + Date.now(), {cache: "no-store"});
+      if (!res.ok) return;
+      const text = await res.text();
+      save();
+      for (const k of Object.keys(REGIONS)) store.regions[k].entries = store.regions[k].entries.filter(e => e.source !== "auto");
+      bind();
+      const n = importCSV(text, "auto");
+      bind(); save(); lastFlapText = ""; render();
+      if (n > 0) toast(`Loaded ${n} fares from your daily checks`);
+    } catch(e){}
+  }
+
+  load(); render(); autoLoad();
+})();
+</script>
+</body>
+</html>
