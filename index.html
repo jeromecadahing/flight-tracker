@@ -89,6 +89,14 @@ td.num{font-variant-numeric:tabular-nums;font-weight:600}
 td button{background:none;border:0;color:var(--muted);cursor:pointer;padding:2px 6px}
 .empty{color:var(--muted);padding:20px 0}
 .note{color:var(--muted);font-size:.9rem;margin-top:10px;max-width:70ch}
+.toplist-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.toplist-head h2{margin:0;font-size:1.5rem}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.seg button{background:var(--surface);border:0;padding:6px 14px;cursor:pointer;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+td.rank{color:var(--muted);font-variant-numeric:tabular-nums;width:2.5em}
+td .dest{color:var(--muted);font-size:.85rem;display:block}
+td a{color:var(--line);font-weight:600}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 </style>
@@ -112,6 +120,18 @@ td button{background:none;border:0;color:var(--muted);cursor:pointer;padding:2px
 
 <main class="wrap" id="regionPanel" role="tabpanel">
   <div class="stats" id="stats"></div>
+
+  <section id="topSection" hidden>
+    <div class="toplist-head">
+      <h2 id="topTitle">Today’s cheapest flights</h2>
+      <div class="seg" role="group" aria-label="How many flights to show">
+        <button type="button" data-top="10" aria-pressed="true">Top 10</button>
+        <button type="button" data-top="20" aria-pressed="false">Top 20</button>
+      </div>
+    </div>
+    <div class="table-wrap panel" id="topWrap"></div>
+    <p class="note" id="topNote"></p>
+  </section>
 
   <section>
     <h2>Price history and 7-day forecast</h2>
@@ -158,6 +178,8 @@ td button{background:none;border:0;color:var(--muted);cursor:pointer;padding:2px
   };
   let store = {active: "us", regions: {us: {entries: [], trip: ANY}, eu: {entries: [], trip: ANY}}};
   let region = "us", entries = [], trip = ANY;
+  let topData = null, topCount = 10;
+  const TOP_KEYS = {us: "us", eu: "europe"};
 
   // ---------- storage ----------
   function load(){
@@ -386,8 +408,26 @@ td button{background:none;border:0;color:var(--muted);cursor:pointer;padding:2px
     document.title = "London to " + R.name + " fare tracker";
   }
 
+  function renderTop(){
+    const sec = document.getElementById("topSection");
+    const d = topData && topData[TOP_KEYS[region]];
+    if (!d || !d.flights || !d.flights.length){ sec.hidden = true; return; }
+    sec.hidden = false;
+    const esc = s => String(s ?? "").replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+    const time = t => t ? t.slice(11, 16) : "";
+    const dur = m => m ? `${Math.floor(m/60)}h ${String(m%60).padStart(2,"0")}m` : "";
+    const rows = d.flights.slice(0, topCount);
+    document.getElementById("topTitle").textContent = `Cheapest flights on ${new Date(d.travel_date + "T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}`;
+    document.getElementById("topWrap").innerHTML = `<table><thead><tr><th>#</th><th>Price</th><th>Airline</th><th>Route</th><th>Departs</th><th>Arrives</th><th>Time</th><th>Stops</th><th><span hidden>Link</span></th></tr></thead><tbody>` +
+      rows.map((f,i) => `<tr><td class="rank">${i+1}</td><td class="num">${fmt(f.price)}</td><td>${esc(f.airline)}</td><td>${esc(f.route)}<span class="dest">${esc(f.to_name)}</span></td><td>${time(f.departs)}</td><td>${time(f.arrives)}</td><td>${dur(f.duration_min)}</td><td>${f.stops === 0 ? "Direct" : f.stops + (f.stops === 1 ? " stop" : " stops")}</td><td>${/^https:\/\//.test(f.link || "") ? `<a href="${esc(f.link)}" target="_blank" rel="noopener">View</a>` : ""}</td></tr>`).join("") +
+      `</tbody></table>`;
+    document.getElementById("topNote").textContent = `Checked ${fmtDate(d.checked_on)}. Prices can change before you book, so confirm on the airline or Google Flights. “View” opens the Google Flights search these came from.`;
+    document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.top === topCount)));
+  }
+
   function render(){
     renderRegion();
+    renderTop();
     renderTrips();
     const {dates, vals, observed} = seriesFor(trip);
     const fc = forecast(vals);
@@ -472,6 +512,7 @@ td button{background:none;border:0;color:var(--muted);cursor:pointer;padding:2px
     else { save(); render(); toast(n ? `Imported ${n} fare${n === 1 ? "" : "s"}` : "No new fares in that file"); }
   });
   document.getElementById("exportBtn").addEventListener("click", exportCSV);
+  document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { topCount = +b.dataset.top; renderTop(); }));
   document.querySelectorAll(".tab").forEach(t => {
     t.addEventListener("click", () => switchRegion(t.dataset.region));
     t.addEventListener("keydown", ev => {
@@ -490,6 +531,10 @@ td button{background:none;border:0;color:var(--muted);cursor:pointer;padding:2px
   // Those rows are refreshed on every visit; fares you type in yourself are kept.
   async function autoLoad(){
     if (!/^https?:$/.test(location.protocol)) return;
+    fetch("top_flights.json?t=" + Date.now(), {cache: "no-store"})
+      .then(res => res.ok ? res.json() : null)
+      .then(d => { if (d){ topData = d; renderTop(); } })
+      .catch(() => {});
     try {
       const res = await fetch("prices.csv?t=" + Date.now(), {cache: "no-store"});
       if (!res.ok) return;
