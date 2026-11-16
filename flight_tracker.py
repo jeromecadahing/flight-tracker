@@ -47,7 +47,9 @@ REGIONS = {
 MAX_AIRPORTS_PER_SEARCH = 7
 CURRENCY = "GBP"
 DATA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prices.csv")
+TOP_FILE = os.path.join(os.path.dirname(DATA_FILE), "top_flights.json")
 FORECAST_DAYS = 7
+TOP_N = 20  # how many of the cheapest flights to keep each day
 
 FIELDS = [
     "region", "checked_on", "travel_date", "return_date", "price", "currency", "airline",
@@ -67,17 +69,45 @@ def chunks(codes, size=MAX_AIRPORTS_PER_SEARCH):
     return [",".join(items[i:i + size]) for i in range(0, len(items), size)]
 
 
+def describe(option, search_url):
+    legs = option.get("flights") or []
+    airlines, numbers = [], []
+    for leg in legs:
+        if leg.get("airline") and leg["airline"] not in airlines:
+            airlines.append(leg["airline"])
+        if leg.get("flight_number"):
+            numbers.append(leg["flight_number"])
+    first = legs[0] if legs else {}
+    last = legs[-1] if legs else {}
+    route = "-".join([first.get("departure_airport", {}).get("id", "?")]
+                     + [leg.get("arrival_airport", {}).get("id", "?") for leg in legs]) if legs else ""
+    return {
+        "price": option["price"],
+        "airline": " + ".join(airlines),
+        "flight_numbers": ", ".join(numbers),
+        "route": route,
+        "to": last.get("arrival_airport", {}).get("id", ""),
+        "to_name": last.get("arrival_airport", {}).get("name", ""),
+        "departs": first.get("departure_airport", {}).get("time", ""),
+        "arrives": last.get("arrival_airport", {}).get("time", ""),
+        "stops": max(len(legs) - 1, 0),
+        "duration_min": option.get("total_duration", ""),
+        "link": search_url,
+    }
+
+
 def search_all(api_key, origin, dest, travel_date, return_date=None, adults=1):
-    """Search every origin/destination group and keep the cheapest result."""
-    best_row, best_hist, searches = None, [], 0
+    """Search every origin/destination group; keep the cheapest and the top list."""
+    best_row, best_hist, searches, everything = None, [], 0, []
     for o in chunks(origin):
         for d in chunks(dest):
             searches += 1
             try:
-                row, hist = fetch_cheapest(api_key, o, d, travel_date, return_date, adults)
+                row, hist, options = fetch_cheapest(api_key, o, d, travel_date, return_date, adults)
             except NoResults:
                 print(f"  (no flights found for {o} to {d})")
                 continue
+            everything.extend(options)
             if best_row is None or row["price"] < best_row["price"]:
                 best_row, best_hist = row, hist
     if best_row is None:
@@ -85,7 +115,36 @@ def search_all(api_key, origin, dest, travel_date, return_date=None, adults=1):
                  "Try another --date or different airports with --to.")
     if searches > 1:
         print(f"  (used {searches} searches)")
-    return best_row, best_hist
+    # cheapest first, drop exact duplicates (same flights at the same price)
+    seen, top = set(), []
+    for f in sorted(everything, key=lambda f: (f["price"], f["duration_min"] or 0)):
+        key = (f["flight_numbers"], f["departs"], f["price"])
+        if key in seen:
+            continue
+        seen.add(key)
+        top.append(f)
+        if len(top) == TOP_N:
+            break
+    return best_row, best_hist, top
+
+
+def save_top(region, travel_date, return_date, flights, path=TOP_FILE):
+    data = {}
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+        except (ValueError, OSError):
+            data = {}
+    data[region] = {
+        "checked_on": dt.date.today().isoformat(),
+        "travel_date": travel_date,
+        "return_date": return_date or "",
+        "currency": CURRENCY,
+        "flights": flights,
+    }
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=1)
 
 
 def fetch_cheapest(api_key, origin, dest, travel_date, return_date=None, adults=1):
@@ -124,6 +183,8 @@ def fetch_cheapest(api_key, origin, dest, travel_date, return_date=None, adults=
     if not options:
         raise NoResults("No priced flights came back.")
 
+    search_url = (data.get("search_metadata") or {}).get("google_flights_url", "")
+    parsed = [describe(o, search_url) for o in options]
     best = min(options, key=lambda o: o["price"])
     legs = best.get("flights") or []
     airlines = []
@@ -156,7 +217,7 @@ def fetch_cheapest(api_key, origin, dest, travel_date, return_date=None, adults=
         "typical_high": typical[1] if len(typical) > 1 else "",
         "price_level": insights.get("price_level", ""),
     }
-    return row, history
+    return row, history, parsed
 
 
 # --------------------------------------------------------------------------
@@ -335,13 +396,18 @@ def main():
         key = os.environ.get("SERPAPI_KEY")
         if not key:
             sys.exit("Set SERPAPI_KEY first (see the top of this file).")
-        row, google_history = search_all(key, args.origin, dest, travel_date,
-                                         args.return_date, args.adults)
+        row, google_history, top = search_all(key, args.origin, dest, travel_date,
+                                              args.return_date, args.adults)
         row["region"] = region
         save_row(row)
+        save_top(region, travel_date, args.return_date, top)
         stops = "direct" if int(row["stops"]) == 0 else f"{row['stops']} stop(s)"
         print(f"\nCheapest London to {region_name} today ({row['checked_on']}) for {travel_date}:")
         print(f"  {CURRENCY} {row['price']}  {row['airline']}  {row['route']}  ({stops})")
+        print(f"\n  Top {min(10, len(top))} cheapest:")
+        for i, f in enumerate(top[:10], 1):
+            stops = "direct" if f["stops"] == 0 else f"{f['stops']} stop(s)"
+            print(f"  {i:>2}. {CURRENCY} {f['price']:<6} {f['airline'][:28]:<28} {f['route']:<16} {stops}")
         if row["typical_low"]:
             print(f"  Google's typical range: {row['typical_low']} to {row['typical_high']}"
                   f" ({row['price_level'] or 'n/a'})")
