@@ -1,0 +1,38 @@
+name: Daily flight check
+
+on:
+  schedule:
+    - cron: "0 7 * * *"   # every day at 07:00 UTC (8am UK in summer, 7am in winter)
+  workflow_dispatch:       # adds a "Run workflow" button for testing
+
+permissions:
+  contents: write          # lets it save prices.csv back to the repository
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Search flights (USA and Europe)
+        env:
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          TRAVEL_DATE: ${{ vars.TRAVEL_DATE }}
+        run: |
+          OPTS=""
+          if [ -n "$TRAVEL_DATE" ]; then OPTS="--date $TRAVEL_DATE"; fi
+          echo "===== $(date -u '+%Y-%m-%d %H:%M') UTC =====" >> tracker.log
+          python flight_tracker.py $OPTS 2>&1 | tee -a tracker.log || true
+          python flight_tracker.py --region europe $OPTS 2>&1 | tee -a tracker.log || true
+
+      - name: Save results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "Daily fares $(date -u +%F)"
+          git push
