@@ -414,17 +414,22 @@ td a{color:var(--line);font-weight:600}
     if (!d || !d.flights || !d.flights.length){ sec.hidden = true; return; }
     sec.hidden = false;
     const esc = s => String(s ?? "").replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
-    const time = t => t ? t.slice(11, 16) : "";
+    const when = t => {
+      if (!t) return "";
+      const day = new Date(t.slice(0,10) + "T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+      return `${t.slice(11,16)}<span class="dest">${day}</span>`;
+    };
+    const retDay = d.return_date ? new Date(d.return_date + "T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}) : "";
     const dur = m => m ? `${Math.floor(m/60)}h ${String(m%60).padStart(2,"0")}m` : "";
     const rows = d.flights.slice(0, topCount);
     const longDate = x => new Date(x + "T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
     document.getElementById("topTitle").textContent = d.return_date
       ? `Cheapest returns, ${fmtDate(d.travel_date)} to ${longDate(d.return_date)}`
       : `Cheapest flights on ${longDate(d.travel_date)}`;
-    document.getElementById("topWrap").innerHTML = `<table><thead><tr><th>#</th><th>Price</th><th>Airline</th><th>Route</th><th>Departs</th><th>Arrives</th><th>Time</th><th>Stops</th><th><span hidden>Link</span></th></tr></thead><tbody>` +
-      rows.map((f,i) => `<tr><td class="rank">${i+1}</td><td class="num">${fmt(f.price)}</td><td>${esc(f.airline)}</td><td>${esc(f.route)}<span class="dest">${esc(f.to_name)}</span></td><td>${time(f.departs)}</td><td>${time(f.arrives)}</td><td>${dur(f.duration_min)}</td><td>${f.stops === 0 ? "Direct" : f.stops + (f.stops === 1 ? " stop" : " stops")}</td><td>${/^https:\/\//.test(f.link || "") ? `<a href="${esc(f.link)}" target="_blank" rel="noopener">View</a>` : ""}</td></tr>`).join("") +
+    document.getElementById("topWrap").innerHTML = `<table><thead><tr><th>#</th><th>Price</th><th>Airline</th><th>Route</th><th>Departs</th><th>Arrives</th>${retDay ? "<th>Return</th>" : ""}<th>Time</th><th>Stops</th><th><span hidden>Link</span></th></tr></thead><tbody>` +
+      rows.map((f,i) => `<tr><td class="rank">${i+1}</td><td class="num">${fmt(f.price)}</td><td>${esc(f.airline)}</td><td>${esc(f.route)}<span class="dest">${esc(f.to_name)}</span></td><td>${when(f.departs)}</td><td>${when(f.arrives)}</td>${retDay ? `<td>${retDay}<span class="dest">pick on Google</span></td>` : ""}<td>${dur(f.duration_min)}</td><td>${f.stops === 0 ? "Direct" : f.stops + (f.stops === 1 ? " stop" : " stops")}</td><td>${/^https:\/\//.test(f.link || "") ? `<a href="${esc(f.link)}" target="_blank" rel="noopener">View</a>` : ""}</td></tr>`).join("") +
       `</tbody></table>`;
-    document.getElementById("topNote").textContent = `Checked ${fmtDate(d.checked_on)}. ${d.return_date ? "Prices are for the whole return trip; times, route and stops are for the outbound flight. " : ""}Prices can change before you book, so confirm on the airline or Google Flights. “View” opens the Google Flights search these came from.`;
+    document.getElementById("topNote").textContent = `Checked ${fmtDate(d.checked_on)}. ${d.return_date ? "Prices are for the whole return trip. Departs, arrives, route and stops are for the outbound flight; open View to choose your return flight on the date shown. " : ""}Prices can change before you book, so confirm on the airline or Google Flights. “View” opens the Google Flights search these came from.`;
     document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.top === topCount)));
   }
 
