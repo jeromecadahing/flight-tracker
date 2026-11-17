@@ -2,11 +2,11 @@ name: Daily flight check
 
 on:
   schedule:
-    - cron: "0 7 * * *"   # every day at 07:00 UTC (8am UK in summer, 7am in winter)
-  workflow_dispatch:       # adds a "Run workflow" button for testing
+    - cron: "0 7 * * *"
+  workflow_dispatch:
 
 permissions:
-  contents: write          # lets it save prices.csv back to the repository
+  contents: write
 
 jobs:
   check:
@@ -22,9 +22,13 @@ jobs:
         env:
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
           TRAVEL_DATE: ${{ vars.TRAVEL_DATE }}
+          RETURN_DATE: ${{ vars.RETURN_DATE }}
+          TRIP_DAYS: ${{ vars.TRIP_DAYS }}
         run: |
           OPTS=""
           if [ -n "$TRAVEL_DATE" ]; then OPTS="--date $TRAVEL_DATE"; fi
+          if [ -n "$RETURN_DATE" ]; then OPTS="$OPTS --return $RETURN_DATE"
+          else OPTS="$OPTS --trip-days ${TRIP_DAYS:-7}"; fi
           echo "===== $(date -u '+%Y-%m-%d %H:%M') UTC =====" >> tracker.log
           python flight_tracker.py $OPTS 2>&1 | tee -a tracker.log || true
           python flight_tracker.py --region europe $OPTS 2>&1 | tee -a tracker.log || true
