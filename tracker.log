@@ -114,3 +114,48 @@ Forecast needs at least 3 days of prices — keep it running.
 
 GOOD: this is at or near the lowest price in the last two weeks.
 
+===== 2026-11-17 00:21 UTC =====
+
+Cheapest London to USA today (2026-11-17) for 2026-12-17 returning 2026-12-24:
+  GBP 517  Iberia  LHR-MAD-BOS  (1 stop(s))
+
+  Top 10 cheapest:
+   1. GBP 517    Iberia                       LHR-MAD-BOS      1 stop(s)
+   2. GBP 532    Iberia                       LHR-MAD-MIA      1 stop(s)
+   3. GBP 532    Iberia                       LHR-MAD-MIA      1 stop(s)
+   4. GBP 570    Virgin Atlantic + Delta      LHR-BOS-EWR      1 stop(s)
+   5. GBP 600    SWISS                        LHR-ZRH-BOS      1 stop(s)
+   6. GBP 641    SWISS                        LHR-GVA-JFK      1 stop(s)
+   7. GBP 663    Iberia                       LGW-MAD-MIA      1 stop(s)
+   8. GBP 666    United                       LHR-LAX          direct
+   9. GBP 668    American                     LHR-LAX          direct
+  10. GBP 672    American                     LHR-JFK          direct
+
+History: 1 day(s), low 517, high 517
+
+Forecast needs at least 3 days of prices — keep it running.
+
+GOOD: this is at or near the lowest price in the last two weeks.
+
+
+Cheapest London to Europe today (2026-11-17) for 2026-12-17 returning 2026-12-24:
+  GBP 59  Ryanair  STN-DUB  (direct)
+
+  Top 10 cheapest:
+   1. GBP 59     Ryanair                      STN-DUB          direct
+   2. GBP 66     Wizz Air                     LTN-BCN          direct
+   3. GBP 71     easyJet                      LGW-BCN          direct
+   4. GBP 73     easyJet                      LGW-BCN          direct
+   5. GBP 74     Ryanair                      LTN-DUB          direct
+   6. GBP 74     easyJet                      LTN-BCN          direct
+   7. GBP 78     Ryanair                      STN-DUB          direct
+   8. GBP 80     Ryanair                      STN-DUB          direct
+   9. GBP 80     Wizz Air                     LTN-BCN          direct
+  10. GBP 80     easyJet                      LTN-BCN          direct
+
+History: 1 day(s), low 59, high 59
+
+Forecast needs at least 3 days of prices — keep it running.
+
+GOOD: this is at or near the lowest price in the last two weeks.
+
