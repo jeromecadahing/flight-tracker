@@ -1,3 +1,4 @@
 region,checked_on,travel_date,return_date,price,currency,airline,route,stops,duration_min,typical_low,typical_high,price_level
 europe,2026-11-16,2026-12-16,,15,GBP,Ryanair,STN-DUB,0,80,,,
+europe,2026-11-17,2026-12-17,,23,GBP,easyJet,LTN-AMS,0,75,,,
 us,2026-11-16,2026-12-16,,361,GBP,Tap Air Portugal,LGW-LIS-BOS,1,1960,,,

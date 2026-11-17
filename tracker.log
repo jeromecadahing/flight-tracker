@@ -64,3 +64,28 @@ Forecast needs at least 3 days of prices — keep it running.
 
 GOOD: this is at or near the lowest price in the last two weeks.
 
+===== 2026-11-17 00:11 UTC =====
+  (no flights found for LHR,LGW,STN,LTN,LCY to JFK,EWR,BOS,ORD,MIA,MCO,LAX)
+No flights found for that date on any of those routes. Try another --date or different airports with --to.
+
+Cheapest London to Europe today (2026-11-17) for 2026-12-17 (one way):
+  GBP 23  easyJet  LTN-AMS  (direct)
+
+  Top 10 cheapest:
+   1. GBP 23     easyJet                      LTN-AMS          direct
+   2. GBP 23     easyJet                      LTN-AMS          direct
+   3. GBP 23     easyJet                      LTN-AMS          direct
+   4. GBP 25     easyJet                      LTN-AMS          direct
+   5. GBP 28     easyJet                      LTN-AMS          direct
+   6. GBP 31     easyJet                      LTN-AMS          direct
+   7. GBP 35     Wizz Air                     LTN-BCN          direct
+   8. GBP 36     Ryanair                      STN-DUB          direct
+   9. GBP 36     easyJet                      LGW-AMS          direct
+  10. GBP 36     easyJet                      LGW-AMS          direct
+
+History: 1 day(s), low 23, high 23
+
+Forecast needs at least 3 days of prices — keep it running.
+
+GOOD: this is at or near the lowest price in the last two weeks.
+
