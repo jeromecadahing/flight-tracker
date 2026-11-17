@@ -378,6 +378,8 @@ def main():
     p.add_argument("--days-ahead", type=int, default=30,
                    help="If no --date, search this many days from today (default 30)")
     p.add_argument("--return", dest="return_date", help="Return date YYYY-MM-DD for a round trip")
+    p.add_argument("--trip-days", type=int,
+                   help="Round trip: come back this many days after the outbound date")
     p.add_argument("--from", dest="origin", default=LONDON_AIRPORTS, help="Origin airport codes")
     p.add_argument("--to", dest="dest", help="Destination airport codes, comma-separated "
                    "(default: the region's list at the top of this file)")
@@ -390,6 +392,9 @@ def main():
     region_name = REGIONS[region]["name"]
     dest = args.dest or REGIONS[region]["airports"]
     travel_date = args.date or (dt.date.today() + dt.timedelta(days=args.days_ahead)).isoformat()
+    if not args.return_date and args.trip_days:
+        args.return_date = (dt.date.fromisoformat(travel_date)
+                            + dt.timedelta(days=args.trip_days)).isoformat()
     google_history = []
 
     if not args.forecast_only:
@@ -402,7 +407,8 @@ def main():
         save_row(row)
         save_top(region, travel_date, args.return_date, top)
         stops = "direct" if int(row["stops"]) == 0 else f"{row['stops']} stop(s)"
-        print(f"\nCheapest London to {region_name} today ({row['checked_on']}) for {travel_date}:")
+        trip = f"{travel_date} returning {args.return_date}" if args.return_date else f"{travel_date} (one way)"
+        print(f"\nCheapest London to {region_name} today ({row['checked_on']}) for {trip}:")
         print(f"  {CURRENCY} {row['price']}  {row['airline']}  {row['route']}  ({stops})")
         print(f"\n  Top {min(10, len(top))} cheapest:")
         for i, f in enumerate(top[:10], 1):
