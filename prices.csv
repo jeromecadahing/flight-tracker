@@ -2,5 +2,7 @@ region,checked_on,travel_date,return_date,price,currency,airline,route,stops,dur
 europe,2026-11-16,2026-12-16,,15,GBP,Ryanair,STN-DUB,0,80,,,
 europe,2026-11-17,2026-12-17,,23,GBP,easyJet,LTN-AMS,0,75,,,
 europe,2026-11-17,2026-12-17,2026-12-24,59,GBP,Ryanair,STN-DUB,0,80,,,
+europe,2026-11-18,2026-12-18,2026-12-25,88,GBP,Wizz Air,LTN-BCN,0,125,,,
 us,2026-11-16,2026-12-16,,361,GBP,Tap Air Portugal,LGW-LIS-BOS,1,1960,,,
 us,2026-11-17,2026-12-17,2026-12-24,517,GBP,Iberia,LHR-MAD-BOS,1,720,,,
+us,2026-11-18,2026-12-18,2026-12-25,563,GBP,Iberia,LHR-MAD-BOS,1,720,,,
