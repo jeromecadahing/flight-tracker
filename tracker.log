@@ -609,3 +609,48 @@ Forecast needs at least 3 days of prices — keep it running.
 
 GOOD: this is at or near the lowest price in the last two weeks.
 
+===== 2026-11-26 17:24 UTC =====
+
+Cheapest London to USA today (2026-11-26) for 2026-12-26 returning 2027-01-02:
+  GBP 635  Iberia  LGW-MAD-BOS  (1 stop(s))
+
+  Top 10 cheapest:
+   1. GBP 635    Iberia                       LGW-MAD-BOS      1 stop(s)
+   2. GBP 670    SWISS                        LHR-ZRH-BOS      1 stop(s)
+   3. GBP 696    American                     LHR-LAX          direct
+   4. GBP 696    American                     LHR-LAX          direct
+   5. GBP 704    KLM + Delta                  LHR-AMS-BOS      1 stop(s)
+   6. GBP 709    Air France                   LHR-CDG-BOS      1 stop(s)
+   7. GBP 709    Air France + Delta           LHR-CDG-BOS      1 stop(s)
+   8. GBP 718    Delta                        LHR-BOS          direct
+   9. GBP 737    British Airways + American   LCY-AMS-PHL-LAX  2 stop(s)
+  10. GBP 756    United                       LHR-LAX          direct
+
+History: 1 day(s), low 635, high 635
+
+Forecast needs at least 3 days of prices — keep it running.
+
+GOOD: this is at or near the lowest price in the last two weeks.
+
+
+Cheapest London to Europe today (2026-11-26) for 2026-12-26 returning 2027-01-02:
+  GBP 80  Ryanair  STN-DUB  (direct)
+
+  Top 10 cheapest:
+   1. GBP 80     Ryanair                      STN-DUB          direct
+   2. GBP 80     Ryanair                      STN-DUB          direct
+   3. GBP 80     Ryanair                      STN-DUB          direct
+   4. GBP 80     Ryanair                      STN-DUB          direct
+   5. GBP 81     Ryanair                      STN-DUB          direct
+   6. GBP 82     Ryanair                      STN-DUB          direct
+   7. GBP 82     Ryanair                      STN-DUB          direct
+   8. GBP 83     Ryanair                      STN-DUB          direct
+   9. GBP 83     Ryanair                      STN-DUB          direct
+  10. GBP 84     Ryanair                      STN-DUB          direct
+
+History: 1 day(s), low 80, high 80
+
+Forecast needs at least 3 days of prices — keep it running.
+
+GOOD: this is at or near the lowest price in the last two weeks.
+
