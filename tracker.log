@@ -654,3 +654,48 @@ Forecast needs at least 3 days of prices — keep it running.
 
 GOOD: this is at or near the lowest price in the last two weeks.
 
+===== 2026-11-27 17:03 UTC =====
+
+Cheapest London to USA today (2026-11-27) for 2026-12-27 returning 2027-01-03:
+  GBP 604  Austrian  LHR-VIE-BOS  (1 stop(s))
+
+  Top 10 cheapest:
+   1. GBP 604    Austrian                     LHR-VIE-BOS      1 stop(s)
+   2. GBP 605    United                       LHR-ORD-BOS      1 stop(s)
+   3. GBP 636    Lufthansa                    LHR-FRA-BOS      1 stop(s)
+   4. GBP 636    Lufthansa City Airlines + Lu LHR-FRA-BOS      1 stop(s)
+   5. GBP 636    Lufthansa                    LHR-MUC-BOS      1 stop(s)
+   6. GBP 636    Lufthansa City Airlines + Lu LHR-MUC-BOS      1 stop(s)
+   7. GBP 667    Air Canada                   LHR-YYZ-BOS      1 stop(s)
+   8. GBP 671    Air Canada                   LHR-YYZ-LAX      1 stop(s)
+   9. GBP 691    Air Canada                   LHR-YHZ-BOS      1 stop(s)
+  10. GBP 694    Icelandair                   LHR-KEF-BOS      1 stop(s)
+
+History: 1 day(s), low 604, high 604
+
+Forecast needs at least 3 days of prices — keep it running.
+
+GOOD: this is at or near the lowest price in the last two weeks.
+
+
+Cheapest London to Europe today (2026-11-27) for 2026-12-27 returning 2027-01-03:
+  GBP 70  Ryanair  STN-DUB  (direct)
+
+  Top 10 cheapest:
+   1. GBP 70     Ryanair                      STN-DUB          direct
+   2. GBP 79     Ryanair                      LTN-DUB          direct
+   3. GBP 80     Ryanair                      STN-DUB          direct
+   4. GBP 84     Ryanair                      STN-DUB          direct
+   5. GBP 85     Ryanair                      LTN-DUB          direct
+   6. GBP 91     Ryanair                      LTN-DUB          direct
+   7. GBP 93     Ryanair                      LGW-DUB          direct
+   8. GBP 95     Ryanair                      LGW-DUB          direct
+   9. GBP 97     Ryanair                      STN-DUB          direct
+  10. GBP 98     Ryanair                      STN-DUB          direct
+
+History: 1 day(s), low 70, high 70
+
+Forecast needs at least 3 days of prices — keep it running.
+
+GOOD: this is at or near the lowest price in the last two weeks.
+
